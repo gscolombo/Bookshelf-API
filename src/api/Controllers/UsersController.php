@@ -22,6 +22,7 @@
         }
 
         private function register($private_key, $public_key){
+            $this -> resource -> init();
             $this -> resource -> subscribe($this -> name, $this -> email, $this -> password, $private_key, $public_key);
         }
 

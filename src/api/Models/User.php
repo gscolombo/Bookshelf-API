@@ -56,14 +56,14 @@
                 $hash_password = $row["password"];
                 $user_name = $row["name"];
                 if (password_verify($password, $hash_password)) {
-                    $arr = $this -> setJWT($id, $user_name, $private_key);
-                    echo json_encode([
+                    $jwtData = $this -> setJWT($id, $user_name, $private_key);
+
+                    $data = [
                         "message" => "Successful login!",
                         "userName" => $user_name,
-                        "jwt" => $arr["jwt"],
-                        "publicKey" => $public_key,
-                        "expireAt" => $arr["exp"],
-                    ]);
+                        "expireAt" => $jwtData["exp"],
+                    ];
+                    $this -> give_cookie($jwtData, $data, $public_key);
                 } else {
                     echo json_encode([
                         "message" => "Login failed!",
@@ -80,39 +80,46 @@
 
         public function subscribe(string $name, string $email, string $password, $private_key, $public_key)
         {   
-            $hash_password = password_hash($password, PASSWORD_DEFAULT);
-            $email_check_sql = "SELECT COUNT(id) FROM users WHERE email = :email";
-            $email_check_stmt = $this -> connection -> prepare($email_check_sql);
-            $email_check_stmt -> execute(["email" => $email]);
-            $has_email = $email_check_stmt -> fetchColumn() > 0;
+            try {
+                $hash_password = password_hash($password, PASSWORD_DEFAULT);
+                $email_check_sql = "SELECT COUNT(id) FROM users WHERE email = :email";
+                $email_check_stmt = $this -> connection -> prepare($email_check_sql);
+                $email_check_stmt -> execute(["email" => $email]);
+                $has_email = $email_check_stmt -> fetchColumn() > 0;
 
-            if ($has_email) {
-                http_response_code(400);
-                echo json_encode(["message" => "User already registered"]);
+                if ($has_email) {
+                    http_response_code(400);
+                    echo json_encode(["message" => "User already registered"]);
+                    die();
+                }
+
+                $sql = "INSERT INTO users (name, email, password) VALUES (:name, :email, :password)";
+                $stmt = $this -> connection -> prepare($sql);
+                $stmt -> bindParam(":name", $name);
+                $stmt -> bindParam(":email", $email);
+                $stmt -> bindParam(":password", $hash_password);
+
+                if ($stmt -> execute()) {
+                    $user_id = intval($this -> connection -> lastInsertId());
+                    $jwtData = $this -> setJWT($user_id, $name, $private_key);
+                    $this -> createTables($user_id);
+
+                    $data = [
+                        "message" => "User registered successfully!",
+                        "userName" => $user_name,
+                        "expireAt" => $jwtData["exp"],
+                    ];
+
+                    $this -> give_cookie($jwtData, $data, $public_key, 201);
+                } else {
+                    http_response_code(400);
+                    echo json_encode(["message" => "User registration failed!"]);
+                }
+            } catch(PDOException | Exception $err) {
+                http_response_code(500);
+                echo json_encode(["message" => "User registration failed!", "error" => $err -> getMessage()]);
                 die();
-            }
-
-            $sql = "INSERT INTO users (name, email, password) VALUES (:name, :email, :password)";
-            $stmt = $this -> connection -> prepare($sql);
-            $stmt -> bindParam(":name", $name);
-            $stmt -> bindParam(":email", $email);
-            $stmt -> bindParam(":password", $hash_password);
-
-            if ($stmt -> execute()) {
-                $user_id = intval($this -> connection -> lastInsertId());
-                $arr = $this -> setJWT($user_id, $name, $private_key);
-                $this -> createTables($user_id);
-                echo json_encode([
-                    "message" => "User registered successfully!", 
-                    "userName" => $name,
-                    "jwt" => $arr["jwt"],
-                    "publicKey" => $public_key,
-                    "expireAt" => $arr["exp"]
-                ]);
-            } else {
-                http_response_code(400);
-                echo json_encode(["message" => "User registration failed!"]);
-            }
+            } 
         }
 
         public function unsubscribe(int $id)
@@ -127,7 +134,7 @@
             }
         }
 
-        public function createTables(int $id) {
+        private function createTables(int $id) {
             $user_books_table_query = "CREATE TABLE IF NOT EXISTS user_{$id}_books (
                         id INT(255) AUTO_INCREMENT,
                         title VARCHAR(255) NOT NULL,
@@ -200,6 +207,25 @@
             } else {
                 http_response_code(404);
                 echo json_encode(["message" => "User not found"]);
+            }
+        }
+
+        private function give_cookie(array $jwtData, array $data, string $public_key, int $http_code = 200) {
+            // Define cookie options
+            $cookie_options = [
+                "expires" => $jwtData["exp"],
+                "path" => "/api/",
+                "domain" => 'localhost',
+                "httponly" => true,
+                "samesite" => 'Strict'
+            ];
+
+            // Set cookies to be sent with auth data
+            $cookies_set = setcookie("jwt", $jwtData["jwt"], $cookie_options) && setcookie("public_key", $public_key, $cookie_options);
+
+            if ($cookies_set) {
+                http_response_code($http_code);
+                echo json_encode($data);
             }
         }
     }

@@ -8,7 +8,7 @@
         protected array $uri, $params, $query, $post_data;
         public object $resource;
 
-        protected function __construct(string $method, array $uri, $query, array $post_data, string $client_token, string $public_key) {            
+        protected function __construct(string $method, array $uri, string $query, array $post_data, string $client_token, string $public_key) {            
             $this -> method = $method;
             $this -> uri = $uri;
             $this -> post_data = $post_data;
@@ -77,15 +77,17 @@
         }
 
         private function set_query(string $query) {
-            $subqueries = explode("&", $query);
-            $query_arr = [];
-
-            foreach($subqueries as $pair) {
-                $pair_parts = explode("=", $pair);
-                $query_arr[] = [$pair_parts[0] => str_replace("+", " ", $pair_parts[1])];
+            if ($query !== "") {
+                $subqueries = explode("&", $query);
+                $query_arr = [];
+    
+                foreach($subqueries as $pair) {
+                    $pair_parts = explode("=", $pair);
+                    $query_arr[] = [$pair_parts[0] => str_replace("+", " ", $pair_parts[1])];
+                }
+    
+                $this -> query = $query_arr;
             }
-
-            $this -> query = $query_arr;
         }
 
         protected function get(){

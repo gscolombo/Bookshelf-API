@@ -7,8 +7,8 @@
   "type": "api",
   "autoload": {
     "classmap": [
-      "./Models",
-      "./Controllers"
+      "./api/Models/",
+      "./api/Controllers/"
     ]
   },
   "authors": [

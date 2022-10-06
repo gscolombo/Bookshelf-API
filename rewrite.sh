@@ -1,5 +1,4 @@
 #!/bin/bash
-
 #Set the path to Apache configuration file
 path='/etc/apache2/apache2.conf'
 
@@ -10,7 +9,7 @@ directives=(' ' '# URL rewriting' '<Directory /var/www/html/>' '\t RewriteEngine
 if [ -f "$path" ]
 then
 for str in "${directives[@]}"; do
-    echo -e $str >> "$path"
+echo -e "$str" >> "$path"
 done    
 echo "Directives added successfully"
 else

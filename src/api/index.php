@@ -9,7 +9,7 @@
     $resource_name = $uri[2];
     
     // Query parameters handling
-    $query_str = parse_url($_SERVER['REQUEST_URI'], PHP_URL_QUERY);
+    $query_str = parse_url($_SERVER['REQUEST_URI'], PHP_URL_QUERY)?: "";
 
     // Post data handling
     $data = [];
@@ -17,17 +17,13 @@
         $data = json_decode(file_get_contents("php://input"), true);
     }
 
-    // Authorization token handling
-    $request_headers = apache_request_headers();
-    $auth = array_key_exists("Authorization", $request_headers) && 
-            array_key_exists("X-PubKey", $request_headers) &&
-            preg_match("/Bearer/", $request_headers["Authorization"]);
-
+    $auth = array_key_exists("jwt", $_COOKIE) && array_key_exists("public_key", $_COOKIE);
     $client_token = "";
     $public_key = "";
+
     if ($auth) {
-        $client_token = str_replace("Bearer ", "", $request_headers["Authorization"]);
-        $public_key = $request_headers["X-PubKey"];
+        $client_token = $_COOKIE["jwt"];
+        $public_key = $_COOKIE["public_key"];
     }
 
     $args = [$method, $uri, $query_str, $data, $client_token, $public_key];
