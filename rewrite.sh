@@ -3,7 +3,7 @@
 path='/etc/apache2/apache2.conf'
 
 #Set rewrite directives with an initial comment
-directives=(' ' '# URL rewriting' '<Directory /var/www/html/>' '\t RewriteEngine on' '\t RewriteCond %{REQUEST_FILENAME} !-f' '\t RewriteCond %{REQUEST_FILENAME} !-d' '\t RewriteRule api/(.*)$ /api/index.php/$1 [L]' '</Directory>')
+directives=(' ' '# URL rewriting' '<Directory /var/www/html/>' '\t RewriteEngine on' '\t RewriteCond %{REQUEST_FILENAME} !-f' '\t RewriteCond %{REQUEST_FILENAME} !-d' '\t RewriteRule api/(.*)$ /api/index.php/$1' '\t RewriteRule docs$ /views/home.php/ [L]' '</Directory>')
 
 #Put each directive in a line of the configuration file
 if [ -f "$path" ]
