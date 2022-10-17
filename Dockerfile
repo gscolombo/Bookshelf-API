@@ -1,7 +1,11 @@
 FROM php:8.0-apache
+
+# Apache rewrite mod configurations
 COPY ./rewrite.sh /
 RUN a2enmod rewrite && service apache2 restart
 RUN chmod +x /rewrite.sh && sed -i 's/\r$//' /rewrite.sh && /bin/bash /rewrite.sh
+
+# PHP extensions installation
 RUN apt-get update && apt-get install -y  libzip-dev zip \
 && docker-php-ext-install mysqli pdo pdo_mysql zip
 
